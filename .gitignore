@@ -1,0 +1,1 @@
+Nothing should be ignored in this case. The changes only include source/config files (index.html) and a deleted text file (a.txt), with no build artifacts, dependencies, or temporary files present.
