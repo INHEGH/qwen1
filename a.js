@@ -1,2 +1,2 @@
 console.log(111111111111111,new Date());
-alert(1);
+// alert(1);
