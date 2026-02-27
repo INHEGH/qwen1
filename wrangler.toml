@@ -9,3 +9,16 @@ workers_dev = true
 binding = "DB"
 database_name = "DB"
 database_id = "YOUR_DATABASE_ID"
+
+# Enable static asset serving
+[[rules]]
+globs = ["**/*.js"]
+custom = { mime_type = "application/javascript" }
+
+[[rules]]
+globs = ["**/*.css"]
+custom = { mime_type = "text/css" }
+
+[[rules]]
+globs = ["**/*.html"]
+custom = { mime_type = "text/html" }

@@ -2,16 +2,26 @@
 # Dependencies
 node_modules/
 
-# Logs and temp files
-*.log
-*.tmp
+# Build artifacts
+dist/
+build/
+*.js.map
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
 .idea/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
 ```
