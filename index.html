@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AAAAAAAA</title>
-    <script src='a.js'></script>
+    <title>D1 数据库管理工具</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -17,16 +16,16 @@
         header {
             background-color: #202123;
             color: white;
-            padding: 2rem 0;
+            padding: 1rem 0;
             text-align: center;
         }
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 2rem auto;
             padding: 0 1rem;
         }
         h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 1rem;
         }
         h2 {
@@ -35,96 +34,169 @@
             padding-bottom: 0.5rem;
             margin-top: 2rem;
         }
-        .feature-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
+        .form-group {
             margin: 1rem 0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .cta-button {
-            display: inline-block;
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            font-family: monospace;
+        }
+        button {
             background-color: #3498db;
             color: white;
             padding: 0.75rem 1.5rem;
-            text-decoration: none;
+            border: none;
             border-radius: 5px;
-            margin-top: 1rem;
-            transition: background-color 0.3s;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            margin-top: 0.5rem;
         }
-        .cta-button:hover {
+        button:hover {
             background-color: #2980b9;
         }
-        footer {
-            text-align: center;
-            padding: 2rem 0;
-            margin-top: 2rem;
-            color: #7f8c8d;
-            background: #ecf0f1;
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .result-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: black;
+            margin: 0;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>通义千问AI</h1>
-        <p>开启智能对话的新篇章</p>
+        <h1>.cloudflare D1 数据库管理工具</h1>
+        <p>管理 DB 数据库 - 表结构与数据查询</p>
     </header>
 
     <div class="container">
-        <section id="introduction">
-            <h2>什么是通义千问？</h2>
-            <div class="feature-card">
-                <p>通义千问是阿里巴巴集团旗下的通义实验室自主研发的超大规模语言模型。它能够回答问题、创作文字、进行逻辑推理、编程，并支持多语言交流，是一个全能型的人工智能助手。</p>
-            </div>
-        </section>
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'query')">SQL 查询</button>
+            <button class="tablinks" onclick="openTab(event, 'tables')">表管理</button>
+            <button class="tablinks" onclick="openTab(event, 'structure')">数据库结构</button>
+        </div>
 
-        <section id="features">
-            <h2>核心功能</h2>
-            
-            <div class="feature-card">
-                <h3>📝 文字创作</h3>
-                <p>无论是写故事、公文、邮件还是剧本，通义千问都能根据您的需求进行高质量的内容创作。</p>
+        <!-- SQL查询标签页 -->
+        <div id="query" class="tabcontent" style="display: block;">
+            <h2>SQL 查询</h2>
+            <div class="form-group">
+                <label for="sqlQuery">输入 SQL 查询语句:</label>
+                <textarea id="sqlQuery" placeholder="例如: SELECT * FROM table_name;"></textarea>
             </div>
+            <button onclick="executeQuery()">执行查询</button>
+            <button onclick="executeUpdate()">执行更新</button>
+            <div id="queryResult" class="result-container"></div>
+        </div>
 
-            <div class="feature-card">
-                <h3>❓ 智能问答</h3>
-                <p>基于海量知识库，通义千问可以准确回答各种领域的问题，从科学到生活无所不包。</p>
+        <!-- 表管理标签页 -->
+        <div id="tables" class="tabcontent">
+            <h2>表管理</h2>
+            <div class="form-group">
+                <label for="tableName">表名:</label>
+                <input type="text" id="tableName" placeholder="输入表名">
             </div>
+            <div class="form-group">
+                <label for="tableSchema">表结构 (SQL CREATE 语句):</label>
+                <textarea id="tableSchema" placeholder="CREATE TABLE example (id INTEGER PRIMARY KEY, name TEXT);"></textarea>
+            </div>
+            <button onclick="createTable()">创建表</button>
+            <button class="btn-danger" onclick="deleteTable()">删除表</button>
+            <div id="tableResult" class="result-container"></div>
+        </div>
 
-            <div class="feature-card">
-                <h3>💻 编程能力</h3>
-                <p>支持多种编程语言的理解与生成，帮助开发者快速编写和调试代码。</p>
+        <!-- 数据库结构标签页 -->
+        <div id="structure" class="tabcontent">
+            <h2>数据库结构</h2>
+            <button onclick="showTables()">显示所有表</button>
+            <button onclick="showTableInfo()">查看表信息</button>
+            <div class="form-group">
+                <label for="infoTableName">表名 (可选):</label>
+                <input type="text" id="infoTableName" placeholder="指定表名查看详细信息">
             </div>
-
-            <div class="feature-card">
-                <h3>🌐 多语言支持</h3>
-                <p>除了中文，还支持英语、日语、韩语等多种语言，满足国际化需求。</p>
-            </div>
-        </section>
-
-        <section id="use-cases">
-            <h2>应用场景</h2>
-            <div class="feature-card">
-                <ul>
-                    <li><strong>教育学习</strong>：辅助学生理解复杂概念，解答作业难题。</li>
-                    <li><strong>办公提效</strong>：自动生成报告、总结会议纪要、撰写邮件。</li>
-                    <li><strong>创意写作</strong>：为作家、编剧提供灵感和初稿生成。</li>
-                    <li><strong>客户服务</strong>：作为智能客服，提供24/7的即时响应。</li>
-                </ul>
-            </div>
-        </section>
-
-        <section id="get-started">
-            <h2>立即体验</h2>
-            <div class="feature-card">
-                <p>访问我们的官方网站，开始与通义千问进行对话，探索无限可能！</p>
-                <a href="https://www.aliyun.com/product/dashscope" class="cta-button">访问官网</a>
-            </div>
-        </section>
+            <div id="structureResult" class="result-container"></div>
+        </div>
     </div>
 
-    <footer>
-        <p>© 2024 通义实验室. 版权所有</p>
-    </footer>
+    <script src='app.js'></script>
 </body>
 </html>
