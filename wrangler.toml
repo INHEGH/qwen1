@@ -1,4 +1,5 @@
 name = "qwen1"
+main = "src/index.js"
 compatibility_date = "2024-01-01"
 
 [env.production]
@@ -9,16 +10,5 @@ workers_dev = true
 binding = "DB"
 database_name = "DB"
 database_id = "YOUR_DATABASE_ID"
+preview_database_id = "YOUR_DATABASE_ID"
 
-# Enable static asset serving
-[[rules]]
-globs = ["**/*.js"]
-custom = { mime_type = "application/javascript" }
-
-[[rules]]
-globs = ["**/*.css"]
-custom = { mime_type = "text/css" }
-
-[[rules]]
-globs = ["**/*.html"]
-custom = { mime_type = "text/html" }
