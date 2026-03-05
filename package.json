@@ -11,10 +11,8 @@
   "author": "",
   "license": "ISC",
   "description": "A Cloudflare Worker for managing D1 database",
-  "dependencies": {
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231205.0",
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.114.17"
   }
 }
