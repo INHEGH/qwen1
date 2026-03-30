@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TapRush - 点击突袭</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            background: #1a1a2e;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(26, 26, 46, 0.95);
+            pointer-events: auto;
+            transition: opacity 0.3s;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .logo {
+            font-size: 48px;
+            color: #ecf0f1;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 15px 50px;
+            font-size: 20px;
+            color: white;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+            transition: all 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        .stat-box {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            border-radius: 10px;
+            padding: 20px 40px;
+            margin: 15px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .hud.hidden {
+            opacity: 0;
+        }
+
+        .hud-item {
+            color: #ecf0f1;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .score-display {
+            font-size: 32px;
+            color: #f1c40f;
+        }
+
+        .timer {
+            color: #e74c3c;
+        }
+
+        .timer.warning {
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .combo-display {
+            font-size: 24px;
+            color: #00d9ff;
+        }
+
+        .result-title {
+            font-size: 36px;
+            color: #ecf0f1;
+            margin-bottom: 20px;
+        }
+
+        .result-score {
+            font-size: 56px;
+            color: #f1c40f;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(241, 196, 15, 0.5);
+        }
+
+        .new-record {
+            color: #e74c3c;
+            font-size: 18px;
+            margin-bottom: 20px;
+            animation: bounce 0.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .result-stat {
+            text-align: center;
+        }
+
+        .result-stat-value {
+            font-size: 24px;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .result-stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: #ecf0f1;
+            font-weight: bold;
+            text-shadow: 0 0 50px rgba(52, 152, 219, 0.8);
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .countdown.animate {
+            animation: countdownPop 1s forwards;
+        }
+
+        @keyframes countdownPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        .pause-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            font-size: 20px;
+            color: white;
+        }
+
+        .pause-menu {
+            background: rgba(26, 26, 46, 0.98);
+        }
+
+        .sound-toggle {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="ui-layer">
+        <!-- HUD -->
+        <div id="hud" class="hud hidden">
+            <div class="hud-item timer" id="timer">60</div>
+            <div class="hud-item score-display" id="scoreDisplay">0</div>
+            <div class="hud-item combo-display" id="comboDisplay"></div>
+        </div>
+        
+        <div id="pauseBtn" class="pause-btn hidden">⏸</div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen">
+            <div class="logo">🎮 TAP RUSH</div>
+            <div class="subtitle">点击爆破 · 连锁狂欢</div>
+            
+            <div class="stat-box">
+                <div class="stat-label">最高分</div>
+                <div class="stat-value" id="highScore">0</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" id="startBtn">开始游戏</button>
+            </div>
+            
+            <div class="stat-box" style="margin-top: 20px;">
+                <div class="stat-label">总游戏次数</div>
+                <div class="stat-value" id="totalGames" style="font-size: 20px;">0</div>
+            </div>
+        </div>
+
+        <!-- Countdown -->
+        <div id="countdown" class="countdown"></div>
+
+        <!-- Result Screen -->
+        <div id="resultScreen" class="screen hidden">
+            <div class="result-title">游戏结束</div>
+            <div class="result-score" id="finalScore">0</div>
+            <div class="new-record hidden" id="newRecord">🎉 新纪录！</div>
+            
+            <div class="result-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value" id="enemiesDefeated">0</div>
+                    <div class="result-stat-label">消灭敌人</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="maxChain">0</div>
+                    <div class="result-stat-label">最高连锁</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="avgChain">0</div>
+                    <div class="result-stat-label">平均连锁</div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" id="restartBtn">再玩一次</button>
+                <button class="btn btn-secondary" id="homeBtn">返回主页</button>
+            </div>
+        </div>
+
+        <!-- Pause Screen -->
+        <div id="pauseScreen" class="screen pause-menu hidden">
+            <div class="logo">暂停</div>
+            <button class="btn" id="resumeBtn">继续游戏</button>
+            <button class="btn btn-secondary" id="quitBtn">退出游戏</button>
+        </div>
+    </div>
+
+    <div id="soundToggle" class="sound-toggle">🔊</div>
+
+    <script>
+        // ==================== 游戏配置 ====================
+        const CONFIG = {
+            GAME_DURATION: 60,
+            ENEMY_SPAWN_INTERVAL_INITIAL: 800,
+            ENEMY_SPAWN_INTERVAL_MIN: 300,
+            ENEMY_SPEED_INITIAL: 2,
+            ENEMY_SPEED_MAX: 6,
+            ENEMY_LIMIT_INITIAL: 15,
+            ENEMY_LIMIT_MAX: 30,
+            EXPLOSION_RADIUS: 80,
+            ELITE_EXPLOSION_RADIUS: 100,
+            CRIT_EXPLOSION_RADIUS: 150,
+            COMBO_WINDOW: 3000,
+            BOMB_SPAWN_INTERVAL: 15000,
+            TIME_BONUS_CHANCE: 0.01,
+            COLORS: {
+                BACKGROUND: '#1a1a2e',
+                NORMAL: '#e74c3c',
+                ELITE: '#9b59b6',
+                CRIT: '#f1c40f',
+                EXPLOSION: '#ff6b35',
+                COMBO: '#00d9ff',
+                TEXT: '#ecf0f1'
+            }
+        };
+
+        // ==================== 音频管理器 ====================
+        class AudioManager {
+            constructor() {
+                this.enabled = true;
+                this.audioContext = null;
+                this.masterGain = null;
+            }
+
+            init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.connect(this.audioContext.destination);
+                    this.masterGain.gain.value = 0.3;
+                }
+            }
+
+            playExplosion(chain = 0) {
+                if (!this.enabled || !this.audioContext) return;
+                
+                const t = this.audioContext.currentTime;
+                const duration = 0.3;
+                
+                // 白噪声
+                const bufferSize = this.audioContext.sampleRate * duration;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = this.audioContext.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000 + chain * 200, t);
+                
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start(t);
+                
+                // 音调随连锁升高
+                if (chain > 0) {
+                    const osc = this.audioContext.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200 + chain * 50, t);
+                    
+                    const oscGain = this.audioContext.createGain();
+                    oscGain.gain.setValueAtTime(0.5, t);
+                    oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                    
+                    osc.connect(oscGain);
+                    oscGain.connect(this.masterGain);
+                    osc.start(t);
+                    osc.stop(t + 0.2);
+                }
+            }
+
+            playBomb() {
+                if (!this.enabled || !this.audioContext) return;
+                
+                const t = this.audioContext.currentTime;
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, t);
+                osc.frequency.exponentialRampToValueAtTime(30, t + 0.5);
+                
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.5, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.5);
+            }
+
+            playCombo() {
+                if (!this.enabled || !this.audioContext) return;
+                
+                const t = this.audioContext.currentTime;
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, t);
+                
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.3, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + 0.1);
+            }
+
+            playNewRecord() {
+                if (!this.enabled || !this.audioContext) return;
+                
+                const t = this.audioContext.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                
+                notes.forEach((freq, i) => {
+                    const osc = this.audioContext.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    
+                    const gain = this.audioContext.createGain();
+                    gain.gain.setValueAtTime(0.3, t + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.1 + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start(t + i * 0.1);
+                    osc.stop(t + i * 0.1 + 0.3);
+                });
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                return this.enabled;
+            }
+        }
+
+        // ==================== 粒子系统 ====================
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 3;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1;
+                this.decay = Math.random() * 0.02 + 0.02;
+                this.size = Math.random() * 4 + 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                this.life -= this.decay;
+                return this.life > 0;
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 1;
+                this.vy = -2;
+            }
+
+            update() {
+                this.y += this.vy;
+                this.life -= 0.02;
+                return this.life > 0;
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 20px Arial';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText(this.text, this.x, this.y);
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // ==================== 敌人类 ====================
+        class Enemy {
+            constructor(canvasWidth, canvasHeight, centerX, centerY, type = 'normal') {
+                this.type = type;
+                this.centerX = centerX;
+                this.centerY = centerY;
+                
+                // 从边缘随机位置生成
+                const side = Math.floor(Math.random() * 4);
+                const margin = 50;
+                
+                switch(side) {
+                    case 0: // top
+                        this.x = Math.random() * canvasWidth;
+                        this.y = -margin;
+                        break;
+                    case 1: // right
+                        this.x = canvasWidth + margin;
+                        this.y = Math.random() * canvasHeight;
+                        break;
+                    case 2: // bottom
+                        this.x = Math.random() * canvasWidth;
+                        this.y = canvasHeight + margin;
+                        break;
+                    case 3: // left
+                        this.x = -margin;
+                        this.y = Math.random() * canvasHeight;
+                        break;
+                }
+                
+                this.baseSpeed = CONFIG.ENEMY_SPEED_INITIAL;
+                this.hp = type === 'elite' ? Math.floor(Math.random() * 2) + 2 : 1;
+                this.maxHp = this.hp;
+                this.radius = type === 'elite' ? 35 : (type === 'crit' ? 30 : 25);
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.05;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+                this.markedForDeletion = false;
+            }
+
+            update(speedMultiplier) {
+                const dx = this.centerX - this.x;
+                const dy = this.centerY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    this.x += (dx / dist) * this.baseSpeed * speedMultiplier;
+                    this.y += (dy / dist) * this.baseSpeed * speedMultiplier;
+                }
+                
+                this.rotation += this.rotationSpeed;
+                this.pulsePhase += 0.1;
+            }
+
+            draw(ctx) {
+                const pulse = 1 + Math.sin(this.pulsePhase) * 0.05;
+                const size = this.radius * pulse;
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                let color;
+                switch(this.type) {
+                    case 'elite': color = CONFIG.COLORS.ELITE; break;
+                    case 'crit': color = CONFIG.COLORS.CRIT; break;
+                    default: color = CONFIG.COLORS.NORMAL;
+                }
+                
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 15;
+                
+                // 根据类型绘制不同形状
+                if (this.type === 'elite') {
+                    // 六边形
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2;
+                        const x = Math.cos(angle) * size;
+                        const y = Math.sin(angle) * size;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // 核心光点
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'crit') {
+                    // 星形
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        const outerAngle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                        const innerAngle = outerAngle + Math.PI / 5;
+                        const ox = Math.cos(outerAngle) * size;
+                        const oy = Math.sin(outerAngle) * size;
+                        const ix = Math.cos(innerAngle) * size * 0.5;
+                        const iy = Math.sin(innerAngle) * size * 0.5;
+                        if (i === 0) ctx.moveTo(ox, oy);
+                        else ctx.lineTo(ox, oy);
+                        ctx.lineTo(ix, iy);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    // 圆形
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // 血量显示
+                if (this.hp > 1) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowBlur = 0;
+                    ctx.fillText(this.hp, 0, 0);
+                }
+                
+                ctx.restore();
+            }
+
+            isClicked(x, y) {
+                const dx = x - this.x;
+                const dy = y - this.y;
+                return Math.sqrt(dx * dx + dy * dy) <= this.radius * 1.5;
+            }
+        }
+
+        class Bomb {
+            constructor(canvasWidth, canvasHeight) {
+                const side = Math.floor(Math.random() * 4);
+                const margin = 50;
+                
+                switch(side) {
+                    case 0:
+                        this.x = Math.random() * canvasWidth;
+                        this.y = -margin;
+                        break;
+                    case 1:
+                        this.x = canvasWidth + margin;
+                        this.y = Math.random() * canvasHeight;
+                        break;
+                    case 2:
+                        this.x = Math.random() * canvasWidth;
+                        this.y = canvasHeight + margin;
+                        break;
+                    case 3:
+                        this.x = -margin;
+                        this.y = Math.random() * canvasHeight;
+                        break;
+                }
+                
+                this.centerX = canvasWidth / 2;
+                this.centerY = canvasHeight / 2;
+                this.radius = 30;
+                this.timer = 5;
+                this.baseSpeed = CONFIG.ENEMY_SPEED_INITIAL;
+                this.markedForDeletion = false;
+                this.pulsePhase = 0;
+            }
+
+            update(speedMultiplier) {
+                const dx = this.centerX - this.x;
+                const dy = this.centerY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    this.x += (dx / dist) * this.baseSpeed * speedMultiplier;
+                    this.y += (dy / dist) * this.baseSpeed * speedMultiplier;
+                }
+                
+                this.pulsePhase += 0.1;
+            }
+
+            draw(ctx, deltaTime) {
+                const pulse = 1 + Math.sin(this.pulsePhase) * 0.1;
+                const size = this.radius * pulse;
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // 红色背景
+                ctx.fillStyle = '#e74c3c';
+                ctx.shadowColor = '#e74c3c';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(0, 0, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 炸弹图标
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 0;
+                ctx.fillText('💣', 0, 0);
+                
+                // 倒计时数字
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(Math.ceil(this.timer), -10, 15);
+                
+                ctx.restore();
+            }
+
+            isClicked(x, y) {
+                const dx = x - this.x;
+                const dy = y - this.y;
+                return Math.sqrt(dx * dx + dy * dy) <= this.radius * 1.5;
+            }
+        }
+
+        // ==================== 游戏主类 ====================
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                
+                this.audioManager = new AudioManager();
+                this.storage = this.loadStorage();
+                
+                this.enemies = [];
+                this.bombs = [];
+                this.particles = [];
+                this.floatingTexts = [];
+                
+                this.score = 0;
+                this.combo = 0;
+                this.comboTimer = 0;
+                this.chain = 0;
+                this.maxChain = 0;
+                this.totalChains = 0;
+                this.chainCount = 0;
+                this.timeLeft = CONFIG.GAME_DURATION;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.enemiesDefeated = 0;
+                this.timeBonusesUsed = 0;
+                
+                this.spawnTimer = 0;
+                this.bombTimer = 0;
+                this.currentSpawnInterval = CONFIG.ENEMY_SPAWN_INTERVAL_INITIAL;
+                
+                this.centerX = this.canvas.width / 2;
+                this.centerY = this.canvas.height / 2;
+                
+                this.shakeIntensity = 0;
+                
+                this.lastTime = 0;
+                
+                this.bindEvents();
+                this.updateUI();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.centerX = this.canvas.width / 2;
+                this.centerY = this.canvas.height / 2;
+            }
+
+            bindEvents() {
+                window.addEventListener('resize', () => this.resize());
+                
+                // 触摸/点击事件
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.handleClick(touch.clientX, touch.clientY);
+                }, { passive: false });
+                
+                this.canvas.addEventListener('click', (e) => {
+                    this.handleClick(e.clientX, e.clientY);
+                });
+                
+                // UI 按钮
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.audioManager.init();
+                    this.startGame();
+                });
+                
+                document.getElementById('restartBtn').addEventListener('click', () => {
+                    this.startGame();
+                });
+                
+                document.getElementById('homeBtn').addEventListener('click', () => {
+                    this.showStartScreen();
+                });
+                
+                document.getElementById('pauseBtn').addEventListener('click', () => {
+                    this.pauseGame();
+                });
+                
+                document.getElementById('resumeBtn').addEventListener('click', () => {
+                    this.resumeGame();
+                });
+                
+                document.getElementById('quitBtn').addEventListener('click', () => {
+                    this.showStartScreen();
+                });
+                
+                document.getElementById('soundToggle').addEventListener('click', () => {
+                    const enabled = this.audioManager.toggle();
+                    document.getElementById('soundToggle').textContent = enabled ? '🔊' : '🔇';
+                });
+            }
+
+            handleClick(x, y) {
+                if (!this.isPlaying || this.isPaused) return;
+                
+                let hitSomething = false;
+                
+                // 检查是否点击到炸弹
+                for (let i = this.bombs.length - 1; i >= 0; i--) {
+                    const bomb = this.bombs[i];
+                    if (bomb.isClicked(x, y)) {
+                        this.activateBomb(bomb);
+                        hitSomething = true;
+                        break;
+                    }
+                }
+                
+                if (hitSomething) return;
+                
+                // 检查是否点击到敌人
+                let clickedEnemy = null;
+                let minDistance = Infinity;
+                
+                for (const enemy of this.enemies) {
+                    if (enemy.isClicked(x, y)) {
+                        const dx = x - enemy.x;
+                        const dy = y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            clickedEnemy = enemy;
+                        }
+                    }
+                }
+                
+                if (clickedEnemy) {
+                    this.explodeEnemy(clickedEnemy, true);
+                    hitSomething = true;
+                }
+                
+                // 连击处理
+                if (hitSomething) {
+                    this.combo++;
+                    this.comboTimer = CONFIG.COMBO_WINDOW;
+                    
+                    if (this.combo % 5 === 0 && this.combo > 0) {
+                        this.audioManager.playCombo();
+                    }
+                    
+                    this.updateUI();
+                }
+            }
+
+            explodeEnemy(enemy, isDirectHit = false) {
+                this.chain = isDirectHit ? 1 : this.chain + 1;
+                this.chainCount++;
+                this.totalChains += this.chain;
+                
+                if (this.chain > this.maxChain) {
+                    this.maxChain = this.chain;
+                }
+                
+                // 计算爆炸半径
+                let explosionRadius = CONFIG.EXPLOSION_RADIUS;
+                let baseScore = 10;
+                
+                if (enemy.type === 'elite') {
+                    explosionRadius = CONFIG.ELITE_EXPLOSION_RADIUS;
+                    baseScore = 30;
+                } else if (enemy.type === 'crit') {
+                    explosionRadius = CONFIG.CRIT_EXPLOSION_RADIUS;
+                    baseScore = 50;
+                }
+                
+                // 计算连锁倍率
+                const chainMultiplier = 1 + this.chain * 0.5;
+                const points = Math.floor(baseScore * chainMultiplier);
+                
+                // 连击加成
+                const comboBonus = 1 + Math.floor(this.combo / 5) * 0.1;
+                const finalPoints = Math.floor(points * comboBonus);
+                
+                this.score += finalPoints;
+                this.enemiesDefeated++;
+                
+                // 浮动分数
+                this.floatingTexts.push(new FloatingText(
+                    enemy.x, enemy.y, `+${finalPoints}`, '#f1c40f'
+                ));
+                
+                // 创建粒子
+                const particleCount = enemy.type === 'crit' ? 16 : 8;
+                const particleColor = enemy.type === 'crit' ? CONFIG.COLORS.CRIT : 
+                                     enemy.type === 'elite' ? CONFIG.COLORS.ELITE : CONFIG.COLORS.EXPLOSION;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push(new Particle(enemy.x, enemy.y, particleColor));
+                }
+                
+                // 播放音效
+                this.audioManager.playExplosion(this.chain - 1);
+                
+                // 屏幕震动
+                if (this.chain >= 6) {
+                    this.shakeIntensity = this.chain >= 10 ? 6 : 4;
+                } else {
+                    this.shakeIntensity = 2;
+                }
+                
+                // 触觉反馈
+                if (navigator.vibrate && this.chain >= 3) {
+                    navigator.vibrate(this.chain >= 10 ? 50 : 30);
+                }
+                
+                // 移除敌人
+                enemy.markedForDeletion = true;
+                
+                // 检测连锁爆炸
+                this.checkChainExplosion(enemy.x, enemy.y, explosionRadius);
+                
+                // 检查时间奖励敌人
+                if (enemy.type === 'timeBonus') {
+                    if (this.timeBonusesUsed < 3) {
+                        this.timeLeft += 5;
+                        this.timeBonusesUsed++;
+                        this.floatingTexts.push(new FloatingText(
+                            enemy.x, enemy.y, '+5秒', '#00d9ff'
+                        ));
+                    }
+                }
+                
+                this.updateUI();
+            }
+
+            checkChainExplosion(x, y, radius) {
+                for (const enemy of this.enemies) {
+                    if (enemy.markedForDeletion) continue;
+                    
+                    const dx = x - enemy.x;
+                    const dy = y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance <= radius) {
+                        enemy.hp--;
+                        
+                        if (enemy.hp <= 0) {
+                            this.explodeEnemy(enemy, false);
+                        } else {
+                            // 显示受伤效果
+                            this.floatingTexts.push(new FloatingText(
+                                enemy.x, enemy.y, '💥', '#ff6b35'
+                            ));
+                        }
+                    }
+                }
+            }
+
+            activateBomb(bomb) {
+                this.audioManager.playBomb();
+                this.shakeIntensity = 10;
+                
+                // 清屏所有敌人
+                for (const enemy of this.enemies) {
+                    const baseScore = enemy.type === 'crit' ? 50 : enemy.type === 'elite' ? 30 : 10;
+                    this.score += baseScore;
+                    this.enemiesDefeated++;
+                    
+                    // 粒子效果
+                    const color = enemy.type === 'crit' ? CONFIG.COLORS.CRIT : 
+                                 enemy.type === 'elite' ? CONFIG.COLORS.ELITE : CONFIG.COLORS.EXPLOSION;
+                    for (let i = 0; i < 4; i++) {
+                        this.particles.push(new Particle(enemy.x, enemy.y, color));
+                    }
+                }
+                
+                this.enemies = [];
+                bomb.markedForDeletion = true;
+                
+                this.floatingTexts.push(new FloatingText(
+                    bomb.x, bomb.y, '清屏!', '#e74c3c'
+                ));
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(100);
+                }
+                
+                this.updateUI();
+            }
+
+            spawnEnemy() {
+                const difficulty = 1 + (CONFIG.GAME_DURATION - this.timeLeft) / CONFIG.GAME_DURATION * 1.5;
+                
+                // 确定敌人类型
+                const rand = Math.random();
+                let type = 'normal';
+                
+                const eliteChance = Math.min(0.12 * difficulty, 0.2);
+                const critChance = 0.03;
+                
+                if (rand < critChance) {
+                    type = 'crit';
+                } else if (rand < critChance + eliteChance) {
+                    type = 'elite';
+                } else if (rand < critChance + eliteChance + CONFIG.TIME_BONUS_CHANCE) {
+                    type = 'timeBonus';
+                }
+                
+                this.enemies.push(new Enemy(
+                    this.canvas.width,
+                    this.canvas.height,
+                    this.centerX,
+                    this.centerY,
+                    type
+                ));
+            }
+
+            spawnBomb() {
+                this.bombs.push(new Bomb(this.canvas.width, this.canvas.height));
+            }
+
+            update(deltaTime) {
+                if (!this.isPlaying || this.isPaused) return;
+                
+                // 更新时间
+                this.timeLeft -= deltaTime / 1000;
+                if (this.timeLeft <= 0) {
+                    this.endGame();
+                    return;
+                }
+                
+                // 更新难度参数
+                const difficulty = 1 + (CONFIG.GAME_DURATION - this.timeLeft) / CONFIG.GAME_DURATION * 1.5;
+                const speedMultiplier = Math.min(difficulty, 3);
+                const currentEnemyLimit = Math.min(
+                    Math.floor(CONFIG.ENEMY_LIMIT_INITIAL + (CONFIG.ENEMY_LIMIT_MAX - CONFIG.ENEMY_LIMIT_INITIAL) * (difficulty - 1)),
+                    CONFIG.ENEMY_LIMIT_MAX
+                );
+                this.currentSpawnInterval = Math.max(
+                    CONFIG.ENEMY_SPAWN_INTERVAL_INITIAL / difficulty,
+                    CONFIG.ENEMY_SPAWN_INTERVAL_MIN
+                );
+                
+                // 生成敌人
+                this.spawnTimer += deltaTime;
+                if (this.spawnTimer >= this.currentSpawnInterval && this.enemies.length < currentEnemyLimit) {
+                    this.spawnEnemy();
+                    this.spawnTimer = 0;
+                }
+                
+                // 生成炸弹
+                this.bombTimer += deltaTime;
+                if (this.bombTimer >= CONFIG.BOMB_SPAWN_INTERVAL) {
+                    this.spawnBomb();
+                    this.bombTimer = 0;
+                }
+                
+                // 更新炸弹计时器
+                for (const bomb of this.bombs) {
+                    bomb.timer -= deltaTime / 1000;
+                    if (bomb.timer <= 0) {
+                        bomb.markedForDeletion = true;
+                    }
+                }
+                
+                // 更新实体
+                for (const enemy of this.enemies) {
+                    enemy.update(speedMultiplier);
+                }
+                
+                for (const bomb of this.bombs) {
+                    bomb.update(speedMultiplier);
+                }
+                
+                for (const particle of this.particles) {
+                    particle.update();
+                }
+                
+                for (const text of this.floatingTexts) {
+                    text.update();
+                }
+                
+                // 清理标记删除的实体
+                this.enemies = this.enemies.filter(e => !e.markedForDeletion);
+                this.bombs = this.bombs.filter(b => !b.markedForDeletion);
+                this.particles = this.particles.filter(p => p.update());
+                this.floatingTexts = this.floatingTexts.filter(t => t.update());
+                
+                // 更新连击计时器
+                if (this.combo > 0) {
+                    this.comboTimer -= deltaTime;
+                    if (this.comboTimer <= 0) {
+                        this.combo = 0;
+                        this.updateUI();
+                    }
+                }
+                
+                // 更新震动强度
+                if (this.shakeIntensity > 0) {
+                    this.shakeIntensity *= 0.9;
+                    if (this.shakeIntensity < 0.5) {
+                        this.shakeIntensity = 0;
+                    }
+                }
+                
+                // 时间警告
+                const timerEl = document.getElementById('timer');
+                if (this.timeLeft <= 10) {
+                    timerEl.classList.add('warning');
+                    if (Math.floor(this.timeLeft) === Math.floor(this.timeLeft - deltaTime / 1000)) {
+                        // 每秒播放滴答声
+                    }
+                } else {
+                    timerEl.classList.remove('warning');
+                }
+            }
+
+            draw() {
+                // 清空画布
+                this.ctx.fillStyle = CONFIG.COLORS.BACKGROUND;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 应用屏幕震动
+                this.ctx.save();
+                if (this.shakeIntensity > 0) {
+                    const dx = (Math.random() - 0.5) * this.shakeIntensity * 2;
+                    const dy = (Math.random() - 0.5) * this.shakeIntensity * 2;
+                    this.ctx.translate(dx, dy);
+                }
+                
+                // 绘制敌人
+                for (const enemy of this.enemies) {
+                    enemy.draw(this.ctx);
+                }
+                
+                // 绘制炸弹
+                for (const bomb of this.bombs) {
+                    bomb.draw(this.ctx);
+                }
+                
+                // 绘制粒子
+                for (const particle of this.particles) {
+                    particle.draw(this.ctx);
+                }
+                
+                // 绘制浮动文字
+                for (const text of this.floatingTexts) {
+                    text.draw(this.ctx);
+                }
+                
+                this.ctx.restore();
+            }
+
+            gameLoop(timestamp) {
+                const deltaTime = timestamp - this.lastTime;
+                this.lastTime = timestamp;
+                
+                this.update(deltaTime);
+                this.draw();
+                
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+
+            startGame() {
+                this.audioManager.init();
+                
+                // 重置游戏状态
+                this.score = 0;
+                this.combo = 0;
+                this.comboTimer = 0;
+                this.chain = 0;
+                this.maxChain = 0;
+                this.totalChains = 0;
+                this.chainCount = 0;
+                this.timeLeft = CONFIG.GAME_DURATION;
+                this.enemies = [];
+                this.bombs = [];
+                this.particles = [];
+                this.floatingTexts = [];
+                this.enemiesDefeated = 0;
+                this.timeBonusesUsed = 0;
+                this.spawnTimer = 0;
+                this.bombTimer = 0;
+                this.isPlaying = true;
+                this.isPaused = false;
+                
+                // 隐藏开始界面
+                document.getElementById('startScreen').classList.add('hidden');
+                document.getElementById('resultScreen').classList.add('hidden');
+                document.getElementById('pauseScreen').classList.add('hidden');
+                document.getElementById('hud').classList.remove('hidden');
+                document.getElementById('pauseBtn').classList.remove('hidden');
+                
+                this.updateUI();
+                
+                // 倒计时
+                this.showCountdown();
+            }
+
+            showCountdown() {
+                const countdownEl = document.getElementById('countdown');
+                let count = 3;
+                
+                const showNumber = () => {
+                    if (count > 0) {
+                        countdownEl.textContent = count;
+                        countdownEl.classList.remove('animate');
+                        void countdownEl.offsetWidth; // 触发重绘
+                        countdownEl.classList.add('animate');
+                        count--;
+                        setTimeout(showNumber, 1000);
+                    } else {
+                        countdownEl.textContent = 'GO!';
+                        countdownEl.classList.remove('animate');
+                        void countdownEl.offsetWidth;
+                        countdownEl.classList.add('animate');
+                        setTimeout(() => {
+                            countdownEl.classList.remove('animate');
+                        }, 1000);
+                    }
+                };
+                
+                showNumber();
+            }
+
+            pauseGame() {
+                this.isPaused = true;
+                document.getElementById('pauseScreen').classList.remove('hidden');
+            }
+
+            resumeGame() {
+                this.isPaused = false;
+                document.getElementById('pauseScreen').classList.add('hidden');
+                this.lastTime = performance.now();
+            }
+
+            endGame() {
+                this.isPlaying = false;
+                
+                // 更新存档
+                this.storage.totalGames++;
+                this.storage.totalEnemies += this.enemiesDefeated;
+                
+                if (this.score > this.storage.highScore) {
+                    this.storage.highScore = this.score;
+                    this.storage.maxChain = Math.max(this.storage.maxChain, this.maxChain);
+                    this.audioManager.playNewRecord();
+                }
+                
+                if (this.maxChain > this.storage.maxChain) {
+                    this.storage.maxChain = this.maxChain;
+                }
+                
+                this.saveStorage();
+                
+                // 显示结果界面
+                document.getElementById('finalScore').textContent = this.score;
+                document.getElementById('enemiesDefeated').textContent = this.enemiesDefeated;
+                document.getElementById('maxChain').textContent = this.maxChain;
+                document.getElementById('avgChain').textContent = 
+                    this.chainCount > 0 ? (this.totalChains / this.chainCount).toFixed(1) : '0';
+                
+                const newRecordEl = document.getElementById('newRecord');
+                if (this.score >= this.storage.highScore && this.score > 0) {
+                    newRecordEl.classList.remove('hidden');
+                } else {
+                    newRecordEl.classList.add('hidden');
+                }
+                
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('pauseBtn').classList.add('hidden');
+                document.getElementById('resultScreen').classList.remove('hidden');
+            }
+
+            showStartScreen() {
+                this.isPlaying = false;
+                this.isPaused = false;
+                
+                document.getElementById('resultScreen').classList.add('hidden');
+                document.getElementById('pauseScreen').classList.add('hidden');
+                document.getElementById('startScreen').classList.remove('hidden');
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('pauseBtn').classList.add('hidden');
+                
+                this.updateUI();
+            }
+
+            updateUI() {
+                document.getElementById('scoreDisplay').textContent = this.score;
+                document.getElementById('timer').textContent = Math.ceil(this.timeLeft);
+                document.getElementById('comboDisplay').textContent = 
+                    this.combo > 1 ? `${this.combo}连击` : '';
+                document.getElementById('highScore').textContent = this.storage.highScore;
+                document.getElementById('totalGames').textContent = this.storage.totalGames;
+            }
+
+            loadStorage() {
+                try {
+                    const data = localStorage.getItem('taprush_save');
+                    if (data) {
+                        return JSON.parse(data);
+                    }
+                } catch (e) {
+                    console.error('Failed to load save:', e);
+                }
+                
+                return {
+                    highScore: 0,
+                    totalGames: 0,
+                    totalEnemies: 0,
+                    maxChain: 0
+                };
+            }
+
+            saveStorage() {
+                try {
+                    localStorage.setItem('taprush_save', JSON.stringify(this.storage));
+                } catch (e) {
+                    console.error('Failed to save:', e);
+                }
+            }
+        }
+
+        // ==================== 启动游戏 ====================
+        window.addEventListener('load', () => {
+            const game = new Game();
+            game.lastTime = performance.now();
+            requestAnimationFrame((t) => game.gameLoop(t));
+        });
+    </script>
+</body>
+</html>
